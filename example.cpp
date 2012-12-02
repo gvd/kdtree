@@ -7,7 +7,7 @@ namespace bg = boost::geometry;
 namespace bgm = bg::model;
 
 int main(void) {
-	typedef bgm::d2::point_xy<double> Point;
+    typedef bgm::d2::point_xy<double> Point;
     std::vector<Point> points = {{2, 3}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7,2}};
 
     kdtree<Point, Point> tree;
@@ -20,5 +20,5 @@ int main(void) {
     const Point *nearest = tree.nearest(query);
     std::cout << "Nearest point to " << bg::dsv(query) << ": " << bg::dsv(*nearest) << std::endl;
 
-	return 0;
+    return 0;
 }
