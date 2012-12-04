@@ -3,10 +3,11 @@
 
 #include <memory>
 #include <limits>
+#include <queue>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 
-template <typename Data = void, typename Point = boost::geometry::model::d2::point_xy<double>>
+template <typename Data, typename Point = boost::geometry::model::d2::point_xy<double>>
 class kdtree {
 public:
     kdtree() {}
@@ -21,9 +22,48 @@ public:
         }
         m_root = build(m_nodes, 0);
     }
-    const Data *nearest(const Point &query) const {
+    void clear() {
+        m_root.reset();
+        m_nodes.clear();
+    }
+    const Data *nearest_recursive(const Point &query) const {
+        if (!m_root) {
+            return NULL;
+        }
         best_match best(m_root, std::numeric_limits<double>::max());
         nearest(query, m_root, best);
+        return best.node->data;
+    }
+    const Data *nearest_iterative(const Point &query) const {
+        if (!m_root) {
+            return NULL;
+        }
+        std::priority_queue<DistanceTuple, std::vector<DistanceTuple>, SmallestOnTop> stack;
+        best_match best(m_root, std::numeric_limits<double>::max());
+        stack.push(DistanceTuple(0, m_root));
+        while (!stack.empty()) {
+            const auto current = stack.top();
+            if (current.first >= best.distance) {
+                return best.node->data;
+            }
+            stack.pop();
+            auto currentNode = current.second;
+            double d = boost::geometry::comparable_distance(query, *currentNode->split); // no sqrt
+            double dx;
+            if (currentNode->axis == 0) {
+                dx = boost::geometry::get<0>(query) - boost::geometry::get<0>(*currentNode->split);
+            } else {
+                dx = boost::geometry::get<1>(query) - boost::geometry::get<1>(*currentNode->split);
+            }
+            if (d < best.distance) {
+                best.node = currentNode;
+                best.distance = d;
+            }
+            node_ptr near = dx <= 0 ? currentNode->left : currentNode->right;
+            node_ptr far = dx <= 0 ? currentNode->right : currentNode->left;
+            if (far) stack.push(DistanceTuple(dx * dx, far));
+            if (near) stack.push(DistanceTuple(0, near));
+        }
         return best.node->data;
     }
 private:
@@ -38,6 +78,12 @@ private:
     };
     typedef typename kdnode::ptr node_ptr; // get rid of annoying typename
     typedef std::vector<node_ptr> Nodes;
+    typedef std::pair<double, node_ptr> DistanceTuple;
+    struct SmallestOnTop {
+        bool operator()(const DistanceTuple &a, const DistanceTuple &b) const {
+            return a.first > b.first;
+        }
+    };
     Nodes m_nodes;
     node_ptr m_root;
 
@@ -75,7 +121,7 @@ private:
         return node;
     }
 
-    void nearest(const Point &query, const node_ptr &currentNode, best_match &best) const {
+    static void nearest(const Point &query, const node_ptr &currentNode, best_match &best) {
         if (!currentNode) {
             return;
         }
