@@ -81,6 +81,9 @@ protected:
     size_t m_point_count;
 };
 
+TEST_F(KdTreeTest, build_tree_performance) {
+}
+
 TEST_F(KdTreeTest, identical_iterative_and_recursive_results) {
     for (size_t i = 0; i < m_query_count; i++) {
         const Point query = RandomPoint();
@@ -131,6 +134,13 @@ TEST(WikipediaExample, test) {
     bool identical = bg::equals(*nearest, expected_result);
     EXPECT_TRUE(nearest != NULL);
     EXPECT_TRUE(identical) << bg::dsv(*nearest) << " != " << bg::dsv(expected_result);
+}
+
+TEST(DimensionRecursion, subtract) {
+    Point p1(2,3);
+    Point p2(5,1);
+    EXPECT_EQ(-3, subtract(p1, p2, 0));
+    EXPECT_EQ(2, subtract(p1, p2, 1));
 }
 
 int main(int argc, char **argv) {
