@@ -10,7 +10,9 @@
 template <typename Data, typename Point = boost::geometry::model::d2::point_xy<double>>
 class kdtree {
 public:
-    kdtree() {}
+    kdtree() {
+        boost::geometry::assert_dimension<Point, 2>();
+    }
     virtual ~kdtree() {}
     void add(const Point *point, const Data *data) {
         typename kdnode::ptr node = std::make_shared<kdnode>(point, data);
