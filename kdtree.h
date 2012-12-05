@@ -7,6 +7,10 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 
+namespace spatial_index {
+
+namespace util {
+
 // Some compile time recursion in order to get a dimension dynamically
 template <typename Point, std::size_t Dimension, std::size_t Count>
 struct dimension_extractor {
@@ -28,6 +32,8 @@ template <typename Point>
 typename boost::geometry::default_distance_result<Point>::type subtract(const Point &p1, const Point &p2, std::size_t dim) {
     return dimension_extractor<Point, 0, boost::geometry::dimension<Point>::type::value>::subtract(p1, p2, dim);
 }
+
+} // namespace util
 
 template <typename Data, typename Point = boost::geometry::model::d2::point_xy<double>>
 class kdtree {
@@ -71,7 +77,7 @@ public:
             stack.pop();
             auto currentNode = current.second;
             double d = boost::geometry::comparable_distance(query, *currentNode->split); // no sqrt
-            double dx = subtract(query, *currentNode->split, currentNode->axis);
+            double dx = util::subtract(query, *currentNode->split, currentNode->axis);
             if (d < best.distance) {
                 best.node = currentNode;
                 best.distance = d;
@@ -108,7 +114,7 @@ private:
     struct Sort : std::binary_function<NODE_TYPE, NODE_TYPE, bool> {
         Sort(std::size_t dim) : m_dimension(dim) {}
         bool operator()(const NODE_TYPE &lhs, const NODE_TYPE &rhs) const {
-            return subtract(*lhs->split, *rhs->split, m_dimension) < 0;
+            return util::subtract(*lhs->split, *rhs->split, m_dimension) < 0;
         }
         std::size_t m_dimension;
     };
@@ -141,7 +147,7 @@ private:
             return;
         }
         double d = boost::geometry::comparable_distance(query, *currentNode->split); // no sqrt
-        double dx = subtract(query, *currentNode->split, currentNode->axis);
+        double dx = util::subtract(query, *currentNode->split, currentNode->axis);
         if (d < best.distance) {
             best.node = currentNode;
             best.distance = d;
@@ -155,5 +161,7 @@ private:
         nearest(query, far, best);
     }
 };
+
+} // namespace spatial_index
 
 #endif /* KDTREE_H_ */

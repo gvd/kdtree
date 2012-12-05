@@ -19,6 +19,8 @@
 
 #include <kdtree.h>
 
+using namespace spatial_index;
+
 namespace bg = boost::geometry;
 namespace bgm = bg::model;
 namespace bacc = boost::accumulators;
@@ -139,8 +141,8 @@ TEST(WikipediaExample, test) {
 TEST(DimensionRecursion, subtract) {
     Point p1(2,3);
     Point p2(5,1);
-    EXPECT_EQ(-3, subtract(p1, p2, 0));
-    EXPECT_EQ(2, subtract(p1, p2, 1));
+    EXPECT_EQ(-3, util::subtract(p1, p2, 0));
+    EXPECT_EQ(2, util::subtract(p1, p2, 1));
 }
 
 int main(int argc, char **argv) {
