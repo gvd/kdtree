@@ -18,7 +18,7 @@ struct dimension_extractor {
         if (Dimension == dim) {
             return boost::geometry::get<Dimension>(p1) - boost::geometry::get<Dimension>(p2);
         }
-        dimension_extractor<Point, Dimension + 1, Count>::subtract(p1, p2, dim);
+        return dimension_extractor<Point, Dimension + 1, Count>::subtract(p1, p2, dim);
     }
 };
 // end recursion
