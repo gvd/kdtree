@@ -53,6 +53,26 @@ void randomPoints(size_t nr, std::vector<Point> &points) {
     }
 }
 
+template<template <typename> class P = std::less >
+struct ComparePairFirst {
+    template<class T1, class T2> bool operator()(const std::pair<T1, T2> &left, const std::pair<T1, T2> &right) {
+        return P<T1>()(left.first, right.first);
+    }
+};
+
+void LinearSearch(const Point &query, const std::vector<Point> &locations, size_t k, std::vector<const Point*> &result) {
+    std::vector<std::pair<double, size_t>> tmp;
+    for (size_t i = 0; i < locations.size(); i++) {
+        double d = boost::geometry::distance(query, locations.at(i));
+        tmp.push_back(std::pair<double, size_t>(d, i));
+    }
+    std::sort(tmp.begin(), tmp.end(), ComparePairFirst<>());
+    for (size_t i = 0; i < k; i++) {
+        size_t id =  tmp.at(i).second;
+        result.push_back(&locations.at(id));
+    }
+}
+
 class KdTreeTest : public ::testing::Test {
 public:
     KdTreeTest() : m_gen(time(0)), m_dis_x(-10, 10),
@@ -121,6 +141,41 @@ TEST_F(KdTreeTest, iterative_performance) {
         time_acc(t);
     }
     std::cout << "Iterative performance (usec):\n" << time_acc << std::endl;
+}
+
+TEST_F(KdTreeTest, knearest_performance) {
+    TimeAccumulator time_acc;
+    size_t k = 10;
+    std::vector<const Point*> knearest_results;
+    for (size_t i = 0; i < m_query_count; i++) {
+        const Point query = RandomPoint();
+        knearest_results.clear();
+        auto startTime = std::chrono::high_resolution_clock::now();
+        m_tree.knearest(query, k, knearest_results);
+        auto endTime = std::chrono::high_resolution_clock::now();
+        size_t t = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+        time_acc(t);
+    }
+    std::cout << "Recursive knearest (" << k << ") performance (usec):\n" << time_acc << std::endl;
+}
+
+TEST_F(KdTreeTest, check_knearest_results) {
+    std::vector<const Point*> knearest_results, linear_results;
+    size_t k = 10;
+    for (size_t i = 0; i < 10; i++) {
+        Point query = RandomPoint();
+        linear_results.clear();
+        knearest_results.clear();
+        LinearSearch(query, m_points, k, linear_results);
+        m_tree.knearest(query, k, knearest_results);
+        ASSERT_EQ(linear_results.size(), knearest_results.size());
+        for (size_t j = 0; j < knearest_results.size(); j++) {
+            const Point *a = linear_results.at(j);
+            const Point *b = knearest_results.at(j);
+            bool identical = bg::equals(*a, *b);
+            EXPECT_TRUE(identical) << bg::dsv(*a) << " != " << bg::dsv(*b);
+        }
+    }
 }
 
 TEST(WikipediaExample, test) {
